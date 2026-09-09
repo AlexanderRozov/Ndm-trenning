@@ -1,19 +1,35 @@
-//
-// Created by fog54 on 09.09.2026.
-//
+#pragma once
 
-#ifndef QMI_MODEM_MODEMSTATE_H
-#define QMI_MODEM_MODEMSTATE_H
+#include "at/dispatcher.h"
+#include "at/parser.h"
+#include "modem/modem_state.h"
 
+#include <string>
+#include <string_view>
 
-enum  class ModemState {
-    Off,
-    Booting,
-    Ready,
-    SearchingNetwork,
-    Registered,
-    DataConnected
-};
+namespace modem
+{
 
+    class Modem
+    {
+    public:
+        Modem();
 
-#endif //QMI_MODEM_MODEMSTATE_H
+        std::string handle(std::string_view input);
+
+        void startNetworkSearch();
+
+        void networkSearchComplete();
+
+        ModemState state() const noexcept;
+
+    private:
+        at::Parser parser_;
+        at::Dispatcher dispatcher_;
+
+        ModemState state_ = ModemState::Ready;
+
+        bool echo_ = true;
+    };
+
+}

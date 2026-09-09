@@ -24,4 +24,6 @@ add_executable(QMI_modem main.cpp
         src/transport/event_loop.cpp
         include/transport/LineReader.h
         src/transport/LineReader.cpp
+        include/transport/timer_fd.h
+        src/transport/timer_fd.cpp
 )
