@@ -15,4 +15,6 @@ add_executable(QMI_modem main.cpp
         src/modem/Modem.cpp
         include/modem/Modem.h
         include/transport/Tty.h
-        src/transport/Tty.cpp)
+        src/transport/Tty.cpp
+        include/transport/epoll.h
+        src/transport/epoll.cpp)
