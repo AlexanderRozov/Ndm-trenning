@@ -19,4 +19,6 @@ add_executable(QMI_modem main.cpp
         include/transport/epoll.h
         src/transport/epoll.cpp
         include/transport/signal.h
-        src/transport/signal.cpp)
+        src/transport/signal.cpp
+        include/transport/event_loop.h
+        src/transport/event_loop.cpp)

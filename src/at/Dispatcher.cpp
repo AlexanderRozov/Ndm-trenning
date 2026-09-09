@@ -1,6 +1,6 @@
 #include <string>
 
-#include "at/dispatcher.hpp"
+#include "at/dispatcher.h"
 
 struct Command;
 

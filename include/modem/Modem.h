@@ -1,7 +1,7 @@
 #pragma once
 
-#include "at/dispatcher.hpp"
-#include "at/parser.hpp"
+#include "at/dispatcher.h"
+#include "at/parser.h"
 
 #include <string>
 #include <string_view>
