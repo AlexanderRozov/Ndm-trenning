@@ -21,4 +21,7 @@ add_executable(QMI_modem main.cpp
         include/transport/signal.h
         src/transport/signal.cpp
         include/transport/event_loop.h
-        src/transport/event_loop.cpp)
+        src/transport/event_loop.cpp
+        include/transport/LineReader.h
+        src/transport/LineReader.cpp
+)
