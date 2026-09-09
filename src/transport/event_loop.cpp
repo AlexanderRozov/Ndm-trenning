@@ -1,73 +1,90 @@
-#include "transport/event_loop.h"
+#include "transport/event_loop.hpp"
 
-#include <sys/signalfd.h>
-
-#include <unistd.h>
-
-#include <stdexcept>
+#include <sys/epoll.h>
 
 namespace transport
 {
 
-    EventLoop::EventLoop()
-    {
-        epoll_.add(
-            signalFd_.fd(),
-            EPOLLIN);
-    }
-
-    void EventLoop::addFd(
-        int fd,
-        std::uint32_t events,
-        std::function<void(std::uint32_t)> callback)
-    {
-        epoll_.add(fd, events);
-
-        callbacks_.insert_or_assign(
-            fd,
-            std::move(callback));
-    }
-
-    void EventLoop::run()
-    {
-        while (running_)
+EventLoop::EventLoop()
+{
+    // SIGINT/SIGTERM добавляем в epoll.
+    addFd(
+        signalFd_.fd(),
+        EPOLLIN,
+        [this](std::uint32_t)
         {
-            const auto events = epoll_.wait(-1);
+            signalFd_.consume();
 
-            for (const auto& event : events)
+            // Останавливаем event loop
+            // при получении сигнала.
+            stop();
+        });
+}
+
+void EventLoop::addFd(
+    int fd,
+    std::uint32_t events,
+    std::function<void(
+        std::uint32_t)> callback)
+{
+    epoll_.add(
+        fd,
+        events);
+
+    callbacks_.emplace(
+        fd,
+        std::move(callback));
+}
+
+void EventLoop::modifyFd(
+    int fd,
+    std::uint32_t events)
+{
+    epoll_.modify(
+        fd,
+        events);
+}
+
+void EventLoop::removeFd(
+    int fd)
+{
+    epoll_.remove(fd);
+
+    callbacks_.erase(fd);
+}
+
+void EventLoop::run()
+{
+    running_ = true;
+
+    while (running_)
+    {
+        const auto events =
+            epoll_.wait(-1);
+
+        for (const auto& event :
+             events)
+        {
+            const auto it =
+                callbacks_.find(
+                    event.data.fd);
+
+            if (it ==
+                callbacks_.end())
             {
-                if (event.data.fd == signalFd_.fd())
-                {
-                    signalfd_siginfo info{};
-
-                    const auto result =
-                        ::read(
-                            signalFd_.fd(),
-                            &info,
-                            sizeof(info));
-
-                    if (result == sizeof(info))
-                    {
-                        stop();
-                    }
-
-                    continue;
-                }
-
-                const auto it =
-                    callbacks_.find(event.data.fd);
-
-                if (it != callbacks_.end())
-                {
-                    it->second(event.events);
-                }
+                continue;
             }
+
+            it->second(
+                event.events);
         }
     }
-
-    void EventLoop::stop() noexcept
-    {
-        running_ = false;
-    }
-
 }
+
+void EventLoop::stop()
+    noexcept
+{
+    running_ = false;
+}
+
+} // namespace transport
