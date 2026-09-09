@@ -13,4 +13,6 @@ add_executable(QMI_modem main.cpp
         src/at/dispatcher.cpp
         include/at/dispatcher.h
         src/modem/Modem.cpp
-        include/modem/Modem.h)
+        include/modem/Modem.h
+        include/transport/Tty.h
+        src/transport/Tty.cpp)
