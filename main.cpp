@@ -1,9 +1,13 @@
 #include "modem/modem.h"
+#include "transport/epoll.h"
+#include "transport/event_loop.h"
+#include "transport/line_reader.h"
 #include "transport/tty.h"
 
-#include <fcntl.h>
-#include <iostream>
 #include <pty.h>
+
+#include <iostream>
+#include <string>
 #include <unistd.h>
 
 int main()
@@ -13,7 +17,7 @@ int main()
 
     char slaveName[256]{};
 
-    if (openpty(
+    if (::openpty(
             &masterFd,
             &slaveFd,
             slaveName,
@@ -33,29 +37,53 @@ int main()
 
     transport::Tty tty(masterFd);
 
+    transport::LineReader reader;
+
     modem::Modem modem;
 
-    char buffer[256];
+    transport::EventLoop loop;
 
-    while (true)
-    {
-        const ssize_t count =
-            tty.read(buffer, sizeof(buffer));
+    loop.addFd(
+        tty.fd(),
+        EPOLLIN,
+        [&tty, &reader, &modem]
+        (std::uint32_t events)
+        {
+            if (!(events & EPOLLIN))
+                return;
 
-        if (count <= 0)
-            break;
+            char buffer[256];
 
-        std::string input(
-            buffer,
-            static_cast<std::size_t>(count));
+            const ssize_t count =
+                tty.read(buffer, sizeof(buffer));
 
-        const std::string response =
-            modem.handle(input);
+            if (count <= 0)
+                return;
 
-        tty.write(
-            response.data(),
-            response.size());
-    }
+            const std::string_view data(
+                buffer,
+                static_cast<std::size_t>(count));
+
+            while (true)
+            {
+                const auto line =
+                    reader.push(data);
+
+                if (!line)
+                    break;
+
+                const std::string response =
+                    modem.handle(*line);
+
+                tty.write(
+                    response.data(),
+                    response.size());
+            }
+        });
+
+    loop.run();
+
+    std::cout << "Modem stopped\n";
 
     return 0;
 }
